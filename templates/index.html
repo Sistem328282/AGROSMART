@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroSmart | Sistema Inteligente de Gestión Agrícola</title>
+    <style>
+        :root {
+            --verde-bosque: #1B4332;
+            --verde-hoja: #40916C;
+            --verde-claro: #D8F3DC;
+            --ocre: #7F5539;
+            --fondo: #F8FAF9;
+        }
+        body { font-family: Arial, sans-serif; background-color: var(--fondo); color: #222; margin: 0; }
+        header {
+            background: linear-gradient(135deg, var(--verde-bosque), var(--verde-hoja));
+            color: white; padding: 22px 40px; display: flex; justify-content: space-between; align-items: center;
+        }
+        header h1 { margin: 0; font-size: 28px; letter-spacing: 0.5px; }
+        header p { margin: 4px 0 0; font-size: 14px; color: var(--verde-claro); }
+        .container { max-width: 1180px; margin: 25px auto; padding: 0 20px; }
+        .card {
+            background: white; border-radius: 8px; padding: 22px; margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07); border-top: 4px solid var(--verde-hoja);
+        }
+        h2 { color: var(--verde-bosque); margin-top: 0; font-size: 19px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+        label { font-weight: bold; font-size: 12px; color: var(--ocre); display: block; margin-bottom: 4px; text-transform: uppercase; }
+        input, select { width: 100%; padding: 9px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn {
+            background-color: var(--verde-bosque); color: white; border: none; padding: 10px 16px;
+            border-radius: 5px; cursor: pointer; font-weight: bold;
+        }
+        .btn:hover { background-color: var(--verde-hoja); }
+        .btn-add { background-color: var(--verde-hoja); }
+        .btn-upd { background-color: var(--ocre); padding: 6px 10px; font-size: 12px; }
+        .btn-del { background-color: #B00020; padding: 6px 10px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13.5px; }
+        th { background-color: var(--verde-bosque); color: white; padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
+        .pill { background: var(--verde-claro); color: var(--verde-bosque); padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .zona-box { background: #EEF7F2; padding: 12px 16px; border-radius: 6px; margin-top: 15px; border-left: 4px solid var(--verde-bosque); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>AgroSmart</h1>
+        <p>Sistema Inteligente de Gestión, Análisis y Recomendación Agrícola</p>
+    </div>
+    <div style="text-align:right; font-size:13px;">
+        <strong>Base de Datos Relacional (22 Tablas - 3FN)</strong><br>
+        Enfoque Regional: CDMX y Zona Metropolitana
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- MÓDULO 1: RECOMENDADOR CLIMÁTICO Y FINANCIERO -->
+    <div class="card">
+        <h2>1. Recomendador Agronómico por Ubicación, Clima y Rentabilidad</h2>
+        <form method="POST" class="grid">
+            <div>
+                <label>Alcaldía / Municipio:</label>
+                <select name="id_municipio" required>
+                    {% for m in municipios %}
+                    <option value="{{ m.id_municipio }}">{{ m.nombre }} - {{ m.estado }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Mes de Siembra:</label>
+                <select name="mes" required>
+                    <option value="11" selected>Noviembre (Otoño-Invierno / Frío)</option>
+                    <option value="5">Mayo (Primavera-Verano / Templado)</option>
+                </select>
+            </div>
+            <div>
+                <label>Superficie (Hectáreas):</label>
+                <input type="number" step="0.1" min="0.1" name="hectareas" value="1.0" required>
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+                <button type="submit" name="consultar" class="btn" style="width:100%;">Analizar Cultivos Viables</button>
+            </div>
+        </form>
+
+        {% if info_zona %}
+        <div class="zona-box">
+            <strong>Perfil Climático de {{ info_zona.nombre }} ({{ info_zona.estado }}):</strong>
+            Clima {{ info_zona.clima_predominante }} | Temp. Mínima: {{ info_zona.temp_min_prom }}°C | Temp. Máxima: {{ info_zona.temp_max_prom }}°C | Suelo: {{ info_zona.suelo }} | Agua: {{ info_zona.disponibilidad_agua }}
+        </div>
+        {% endif %}
+
+        {% if recomendaciones %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Cultivo Recomendado</th>
+                    <th>Ciclo Cosecha</th>
+                    <th>Costo Producción</th>
+                    <th>Ingreso Estimado</th>
+                    <th>Ganancia Neta</th>
+                    <th>Rentabilidad</th>
+                    <th>Mejor Mercado</th>
+                    <th>Guardar (Create)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recomendaciones %}
+                <tr>
+                    <td><strong>{{ r.cultivo }}</strong><br><small>{{ r.categoria }}</small></td>
+                    <td>{{ r.dias_cosecha_prom }} días</td>
+                    <td>${{ "{:,.2f}".format(r.costo_total) }}</td>
+                    <td>${{ "{:,.2f}".format(r.ingreso_total) }}</td>
+                    <td><strong>${{ "{:,.2f}".format(r.ganancia) }}</strong></td>
+                    <td><span class="pill">+{{ r.rentabilidad }}%</span></td>
+                    <td>{{ r.mercado_destino }} (${{ r.mejor_precio_kg }}/kg)</td>
+                    <td>
+                        <form action="/crear" method="POST">
+                            <input type="hidden" name="nombre_productor" value="Productor Local {{ info_zona.nombre }}">
+                            <input type="hidden" name="id_municipio" value="{{ r.id_municipio }}">
+                            <input type="hidden" name="id_cultivo" value="{{ r.id_cultivo }}">
+                            <input type="hidden" name="hectareas" value="{{ r.hectareas }}">
+                            <input type="hidden" name="fecha_siembra" value="2026-11-25">
+                            <input type="hidden" name="costo_total_estimado" value="{{ r.costo_total }}">
+                            <input type="hidden" name="ingreso_estimado" value="{{ r.ingreso_total }}">
+                            <button type="submit" class="btn btn-add">Guardar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- MÓDULO 2: CRUD DE SIMULACIONES DE RENTABILIDAD -->
+    <div class="card">
+        <h2>2. Bitácora de Simulaciones de Siembra (CRUD Funcional en MySQL)</h2>
+        
+        <form action="/crear" method="POST" class="grid" style="background:#F2F6F4; padding:14px; border-radius:6px;">
+            <div>
+                <label>Productor / Ejido:</label>
+                <input type="text" name="nombre_productor" placeholder="Ej. Parcela San Gregorio" required>
+            </div>
+            <div>
+                <label>Alcaldía / Municipio:</label>
+                <select name="id_municipio" required>
+                    {% for m in municipios %}
+                    <option value="{{ m.id_municipio }}">{{ m.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Cultivo:</label>
+                <select name="id_cultivo" required>
+                    {% for c in cultivos %}
+                    <option value="{{ c.id_cultivo }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Hectáreas:</label>
+                <input type="number" step="0.1" name="hectareas" value="1.0" required>
+            </div>
+            <div>
+                <label>Fecha Siembra:</label>
+                <input type="date" name="fecha_siembra" value="2026-11-25" required>
+            </div>
+            <div>
+                <label>Costo Total ($ MXN):</label>
+                <input type="number" step="0.01" name="costo_total_estimado" value="35000" required>
+            </div>
+            <div>
+                <label>Ingreso Estimado ($ MXN):</label>
+                <input type="number" step="0.01" name="ingreso_estimado" value="95000" required>
+            </div>
+            <div style="display:flex; align-items:flex-end;">
+                <button type="submit" class="btn" style="width:100%;">+ Registrar (Create)</button>
+            </div>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Productor</th>
+                    <th>Ubicación</th>
+                    <th>Cultivo</th>
+                    <th>Hectáreas</th>
+                    <th>Fecha Siembra</th>
+                    <th>Costo Total</th>
+                    <th>Ganancia Neta</th>
+                    <th>Rentabilidad</th>
+                    <th>Acciones (Update / Delete)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in simulaciones %}
+                <tr>
+                    <td>#{{ s.id_simulacion }}</td>
+                    <td>{{ s.nombre_productor }}</td>
+                    <td>{{ s.municipio }}</td>
+                    <td><strong>{{ s.cultivo }}</strong></td>
+                    <form action="/actualizar/{{ s.id_simulacion }}" method="POST">
+                        <td><input type="number" step="0.1" name="hectareas" value="{{ s.hectareas }}" style="width:75px;"></td>
+                        <td><input type="date" name="fecha_siembra" value="{{ s.fecha_siembra }}" style="width:130px;"></td>
+                        <td>${{ "{:,.2f}".format(s.costo_total_estimado) }}</td>
+                        <td>${{ "{:,.2f}".format(s.ganancia_estimada) }}</td>
+                        <td><span class="pill">{{ s.rentabilidad_porcentual }}%</span></td>
+                        <td style="display:flex; gap:6px;">
+                            <button type="submit" class="btn btn-upd">Actualizar</button>
+                    </form>
+                            <form action="/eliminar/{{ s.id_simulacion }}" method="POST">
+                                <button type="submit" class="btn btn-del">Eliminar</button>
+                            </form>
+                        </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MÓDULO 3: PRECIOS COMERCIALES Y MERCADOS -->
+    <div class="card">
+        <h2>3. Monitoreo de Precios Comerciales y Canales de Venta</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Cultivo</th>
+                    <th>Mercado / Centro de Acopio</th>
+                    <th>Canal de Venta</th>
+                    <th>Precio Comercial ($ MXN/kg)</th>
+                    <th>Fecha de Consulta</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in precios %}
+                <tr>
+                    <td><strong>{{ p.cultivo }}</strong></td>
+                    <td>{{ p.mercado }}</td>
+                    <td>{{ p.canal_venta }}</td>
+                    <td><strong>${{ p.precio_kg_mxn }} MXN</strong></td>
+                    <td>{{ p.fecha_consulta }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</body>
+</html>
